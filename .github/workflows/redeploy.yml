@@ -1,0 +1,25 @@
+name: Conditional Redeploy to Render
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # every 15 minutes
+  workflow_dispatch:
+
+jobs:
+  redeploy-if-down:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if Render service is up
+        id: check
+        run: |
+          if curl --fail --silent --show-error https://alexaproxy.onrender.com/; then
+            echo "service_up=true" >> $GITHUB_OUTPUT
+          else
+            echo "service_up=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Render Deploy Hook if service is down
+        if: steps.check.outputs.service_up == 'false'
+        run: |
+          curl -X POST "https://api.render.com/deploy/srv-d3pph4ili9vc73bpmsog?key=2K5EdxeBQZ4"
